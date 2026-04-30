@@ -54,7 +54,7 @@ enma is a two-process system: a **Python host** running on the analyst's machine
 
 ## Agent Categories
 
-The 20 agents are grouped into 5 functional categories, each in its own subdirectory.
+The 23 agents are grouped into 6 functional categories, each in its own subdirectory.
 
 ```
 agents/
@@ -88,6 +88,11 @@ agents/
 │   ├── sqlite_agent.js     SQLite query/mutation logging
 │   ├── fileio_agent.js     File open/write/delete monitoring
 │   └── dlopen_agent.js     Dynamic library load monitoring
+│
+├── ue4/           ← Unreal Engine 4 runtime analysis
+│   ├── ue4_sdk_agent.js    GNames/GUObjectArray dump → SDK JSON (UE4.23–4.27)
+│   ├── ue4_pak_agent.js    PAK file discovery and dump
+│   └── ue4_blueprint_agent.js  Blueprint ProcessEvent call tracer
 │
 └── mem/           ← Interactive memory manipulation
     ├── memscan_agent.js    CheatEngine-style value scanner
@@ -209,6 +214,7 @@ enma mempatch com.example.game 0x7ff1a2b4 -t int32 -v 99999
 │    "unity"    ──► run_unity()   ◄── unity.py                    │
 │    "setup"    ──► run_setup()   ◄── device.py                   │
 │    "repack"   ──► run_repack()  ◄── repack.py                   │
+│    "ue4"      ──► run_ue4()     ◄── ue4.py                      │
 │    "list"     ──► list_apps()                                    │
 └──────────────────────────────────────────────────────────────────┘
 
@@ -327,7 +333,10 @@ Each agent operates at one or more of the following hook layers:
 │  Layer 2: Native libraries                                      │
 │  Interceptor.attach(Module.findExportByName("libssl.so", …))    │
 │  Interceptor.attach(Module.findExportByName("libcrypto.so", …)) │
-│  → ssl (BoringSSL), crypto (EVP_*), dlopen (libdl)              │
+│  Interceptor.attach(Module.findExportByName("libUE4.so", …))    │
+│  → ssl (BoringSSL), crypto (EVP_*), dlopen (libdl),             │
+│    ue4_sdk (GNames/GUObjectArray), ue4_pak (FPakFile),           │
+│    ue4_blueprint (ProcessEvent)                                  │
 ├─────────────────────────────────────────────────────────────────┤
 │  Layer 1: libc / syscall                                        │
 │  Interceptor.attach(Module.findExportByName("libc.so", "open")) │
