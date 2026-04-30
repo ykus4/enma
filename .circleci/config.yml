@@ -1,0 +1,25 @@
+version: 2.1
+
+jobs:
+  lint:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - checkout
+      - run:
+          name: Install uv
+          command: pip install uv --quiet
+      - run:
+          name: Install dependencies
+          command: uv sync
+      - run:
+          name: ruff check
+          command: uv run ruff check src/
+      - run:
+          name: ruff format check
+          command: uv run ruff format --check src/
+
+workflows:
+  ci:
+    jobs:
+      - lint
