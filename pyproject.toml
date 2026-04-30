@@ -1,0 +1,58 @@
+[project]
+name = "enma"
+version = "0.2.0"
+description = "Android runtime analysis and research toolkit — powered by Frida"
+requires-python = ">=3.12"
+dependencies = [
+    "frida>=16.0.0",
+    "frida-tools>=12.0.0",
+]
+
+[project.optional-dependencies]
+unity = ["UnityPy>=1.10.0"]
+
+[project.scripts]
+enma = "enma.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/enma"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=3.7.0",
+    "ruff>=0.4.0",
+    "UnityPy>=1.10.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "ANN", # flake8-annotations
+]
+ignore = [
+    "ANN401", # Any allowed
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["enma"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/enma/report.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
