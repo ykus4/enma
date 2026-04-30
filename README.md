@@ -47,26 +47,26 @@ Optional (for `analyze`):
 | [Il2CppDumper](https://github.com/Perfare/Il2CppDumper) | IL2CPP symbol extraction |
 | `strings` | Native `.so` string extraction |
 
-Optional Python extras:
-
-```bash
-uv pip install "enma[unity]"   # UnityPy for asset extraction
-```
-
 ---
 
 ## Installation
 
 ```bash
-git clone https://github.com/yourname/enma
+git clone https://github.com/ykus4/enma
 cd enma
 uv sync
 ```
 
-Install git hooks for development:
+Activate the virtual environment (optional — prefix commands with `uv run` instead):
 
 ```bash
-uv run pre-commit install
+source .venv/bin/activate
+```
+
+For Unity asset extraction, install the optional extra:
+
+```bash
+uv pip install "enma[unity]"
 ```
 
 ---
