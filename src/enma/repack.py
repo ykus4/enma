@@ -84,14 +84,22 @@ def _ensure_debug_keystore(keystore: Path) -> None:
     logger.info("Generating debug keystore ...")
     keytool_args = [
         "-genkeypair",
-        "-keystore", str(keystore),
-        "-alias", "androiddebugkey",
-        "-keyalg", "RSA",
-        "-keysize", "2048",
-        "-validity", "10000",
-        "-storepass", "android",
-        "-keypass", "android",
-        "-dname", "CN=Android Debug,O=Android,C=US",
+        "-keystore",
+        str(keystore),
+        "-alias",
+        "androiddebugkey",
+        "-keyalg",
+        "RSA",
+        "-keysize",
+        "2048",
+        "-validity",
+        "10000",
+        "-storepass",
+        "android",
+        "-keypass",
+        "android",
+        "-dname",
+        "CN=Android Debug,O=Android,C=US",
     ]
     _run("keytool", *keytool_args)
 
@@ -137,20 +145,28 @@ def _sign_apk(signer: str, signer_path: str, src: Path, dest: Path, keystore: Pa
         _run(
             signer_path,
             "sign",
-            "--ks", str(keystore),
-            "--ks-pass", "pass:android",
-            "--key-pass", "pass:android",
-            "--ks-key-alias", "androiddebugkey",
-            "--out", str(dest),
+            "--ks",
+            str(keystore),
+            "--ks-pass",
+            "pass:android",
+            "--key-pass",
+            "pass:android",
+            "--ks-key-alias",
+            "androiddebugkey",
+            "--out",
+            str(dest),
             str(src),
         )
     else:
         shutil.copy(src, dest)
         _run(
             signer_path,
-            "-keystore", str(keystore),
-            "-storepass", "android",
-            "-keypass", "android",
+            "-keystore",
+            str(keystore),
+            "-storepass",
+            "android",
+            "-keypass",
+            "android",
             str(dest),
             "androiddebugkey",
         )

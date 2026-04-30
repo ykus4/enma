@@ -47,26 +47,26 @@ Optional (for `analyze`):
 | [Il2CppDumper](https://github.com/Perfare/Il2CppDumper) | IL2CPP symbol extraction |
 | `strings` | Native `.so` string extraction |
 
-Optional Python extras:
-
-```bash
-uv pip install "enma[unity]"   # UnityPy for asset extraction
-```
-
 ---
 
 ## Installation
 
 ```bash
-git clone https://github.com/yourname/enma
+git clone https://github.com/ykus4/enma
 cd enma
 uv sync
 ```
 
-Install git hooks for development:
+Activate the virtual environment (optional — prefix commands with `uv run` instead):
 
 ```bash
-uv run pre-commit install
+source .venv/bin/activate
+```
+
+For Unity asset extraction, install the optional extra:
+
+```bash
+uv pip install "enma[unity]"
 ```
 
 ---
@@ -212,6 +212,8 @@ uv run enma repack app.apk -o app-gadget.apk --arch arm64
 | `--arch` | `arm64` (default) / `arm` / `x86_64` / `x86` |
 | `--keep-workdir` | Keep the intermediate smali directory |
 
+Requires on `PATH`: `apktool`, `zipalign`, and `apksigner` (Android build-tools) or `jarsigner` (JDK).
+
 Pipeline:
 1. Download `frida-gadget-{ver}-android-{arch}.so.xz` → cached in `~/.cache/enma/`
 2. `apktool d` — decode APK
@@ -230,11 +232,7 @@ uv run enma unity <dump_dir>
 uv run enma unity ./dump -o ./extracted
 ```
 
-Requires `UnityPy`:
-
-```bash
-uv pip install "enma[unity]"
-```
+Requires the `enma[unity]` extra (see [Installation](#installation)).
 
 Extracts from every `.unity3d` bundle in the dump directory:
 
@@ -569,6 +567,7 @@ enma/
         ├── bypass/             # ssl, crypto, anti_detect, anti_tamper, safetynet
         ├── network/            # http, websocket, protobuf, binder
         ├── storage/            # sqlite, fileio, dlopen
+        ├── ue4/                # ue4_sdk, ue4_pak, ue4_blueprint
         └── mem/                # memscan, mempatch
 ```
 
