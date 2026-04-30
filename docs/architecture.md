@@ -13,7 +13,7 @@ enma is a two-process system: a **Python host** running on the analyst's machine
 │  Analyst Machine                                                    │
 │                                                                     │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  enma CLI  (Python)                                  │   │
+│  │  enma CLI  (Python)                                         │   │
 │  │                                                             │   │
 │  │  cli.py ──► device.py   (frida-server deploy)              │   │
 │  │         ──► repack.py   (APK gadget injection)             │   │
@@ -21,6 +21,7 @@ enma is a two-process system: a **Python host** running on the analyst's machine
 │  │         ──► analyze.py  (post-dump analysis)               │   │
 │  │         ──► report.py   (HTML report generation)           │   │
 │  │         ──► unity.py    (AssetBundle extraction)           │   │
+│  │         ──► ue4.py      (UE4 runtime analysis)             │   │
 │  └────────────────────────┬────────────────────────────────────┘   │
 │                           │ Frida RPC / message bus                │
 │                           │ (USB / TCP)                            │
@@ -37,15 +38,15 @@ enma is a two-process system: a **Python host** running on the analyst's machine
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  Target App Process                                         │   │
 │  │                                                             │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │   │
-│  │  │ Java VM  │  │ ART / JIT│  │ Native   │  │ libc /   │  │   │
-│  │  │ (Dalvik) │  │ (libart) │  │ Libs     │  │ BoringSSL│  │   │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  │   │
-│  │       │             │             │              │          │   │
-│  │       └─────────────┴─────────────┴──────────────┘          │   │
-│  │                           ▲                                  │   │
-│  │                    Frida Interceptors                        │   │
-│  │                    (JS agents injected)                      │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │   │
+│  │  │ Java VM  │  │ ART / JIT│  │ Native   │  │ libc /   │   │   │
+│  │  │ (Dalvik) │  │ (libart) │  │ Libs     │  │ BoringSSL│   │   │
+│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │   │
+│  │       │             │             │              │           │   │
+│  │       └─────────────┴─────────────┴──────────────┘           │   │
+│  │                           ▲                                   │   │
+│  │                    Frida Interceptors                         │   │
+│  │                    (JS agents injected)                       │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
 ```
