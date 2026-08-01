@@ -24,9 +24,18 @@ packages = ["src/enma"]
 [dependency-groups]
 dev = [
     "pre-commit>=3.7.0",
+    "pytest>=8.0.0",
     "ruff>=0.4.0",
     "UnityPy>=1.10.0",
 ]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --strict-config"
 
 [tool.ruff]
 line-length = 100
@@ -52,6 +61,8 @@ known-first-party = ["enma"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/enma/report.py" = ["E501"]
+# Fixture factories return callables/stubs whose precise types are noise.
+"tests/**/*.py" = ["ANN201", "ANN202"]
 
 [tool.ruff.format]
 quote-style = "double"

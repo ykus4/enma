@@ -21,18 +21,12 @@ import sys
 import tempfile
 from pathlib import Path
 
-from enma._util import FRIDA_VERSION, cache_dir, download_github_asset
+from enma.core.abi import DEFAULT_ABI, arch_to_abi
+from enma.core.download import FRIDA_VERSION, cache_dir, download_github_asset
 
 logger = logging.getLogger(__name__)
 
 GADGET_LOADER_CLS = "com/enma/GadgetLoader"
-
-_ABI_MAP = {
-    "arm64": "arm64-v8a",
-    "arm": "armeabi-v7a",
-    "x86_64": "x86_64",
-    "x86": "x86",
-}
 
 _GADGET_SMALI = """\
 .class public {cls};
@@ -185,10 +179,10 @@ def repack_apk(
     zipalign = shutil.which("zipalign")
     signer, signer_path = _find_signer()
 
-    abi = _ABI_MAP.get(arch)
+    abi = arch_to_abi(arch)
     if abi is None:
-        logger.warning("Unknown arch '%s', falling back to arm64-v8a", arch)
-        abi = "arm64-v8a"
+        logger.warning("Unknown arch '%s', falling back to %s", arch, DEFAULT_ABI)
+        abi = DEFAULT_ABI
 
     gadget_so = _get_gadget(arch)
     keystore = cache_dir() / "debug.keystore"

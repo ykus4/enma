@@ -6,41 +6,25 @@ import argparse
 import contextlib
 import json
 import logging
-import sys
+import threading
 from pathlib import Path
+
+from enma.core.agents import UE4_AGENTS
+from enma.core.session import connect, load_scripts, run_until_detached
 
 logger = logging.getLogger(__name__)
 
 
 def run_ue4(args: argparse.Namespace) -> None:
     """Orchestrate UE4 agents and optionally extract PAK contents."""
-    import threading
-
-    from enma.cli import attach_or_spawn, get_device, load_agent, make_on_message, wait_for_process
-
-    device = get_device(args.serial)
-    session = (
-        wait_for_process(device, args.target)
-        if args.watch
-        else attach_or_spawn(device, args.target, args.spawn)
-    )
+    _device, session = connect(args)
 
     out_dir = Path(args.output).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     lock = threading.Lock()
-    agents: list[str] = list(args.type) if args.type else ["ue4_sdk", "ue4_pak", "ue4_blueprint"]
-
-    scripts = {}
-    for agent_name in agents:
-        source = load_agent(agent_name)
-        script = session.create_script(source)
-        script.on("message", make_on_message(agent_name, str(out_dir), lock))
-        scripts[agent_name] = script
-
-    for name, script in scripts.items():
-        logger.info("Loading agent: %s", name)
-        script.load()
+    agents: list[str] = list(args.type) if args.type else list(UE4_AGENTS)
+    scripts = load_scripts(session, agents, str(out_dir), lock)
 
     if "ue4_sdk" in scripts:
         opts: dict = {}
@@ -61,25 +45,16 @@ def run_ue4(args: argparse.Namespace) -> None:
         if bp_opts:
             scripts["ue4_blueprint"].exports_sync.configure(bp_opts)
 
-    done = threading.Event()
-    session.on(
-        "detached",
-        lambda reason, _crash: (logger.info("Detached: %s", reason), done.set()),
-    )
-    try:
-        done.wait()
-    except KeyboardInterrupt:
-        print()
+    def _flush() -> None:
         logger.info("Flushing traces ...")
-        if "ue4_blueprint" in scripts:
-            with contextlib.suppress(Exception):
-                scripts["ue4_blueprint"].exports_sync.flush()
-        if "ue4_pak" in scripts:
-            with contextlib.suppress(Exception):
-                scripts["ue4_pak"].exports_sync.scan()
-    finally:
-        with contextlib.suppress(Exception):
-            session.detach()
+        for name, method in (("ue4_blueprint", "flush"), ("ue4_pak", "scan")):
+            if name in scripts:
+                with contextlib.suppress(Exception):
+                    getattr(scripts[name].exports_sync, method)()
+
+    # The interrupt is intentionally not propagated: --extract-pak must still run
+    # after the user hits Ctrl+C.
+    run_until_detached(session, on_interrupt=_flush)
 
     if args.extract_pak:
         pak_list_file = out_dir / "ue4_pak_list.json"
@@ -179,18 +154,3 @@ def analyze_ue4_dump(dump_dir: Path, report: dict) -> None:
 
     if section:
         report["ue4"] = section
-
-
-def main_analyze(dump_dir: str, output: str | None = None) -> None:
-    """Standalone entry point for UE4-only post-dump analysis."""
-    path = Path(dump_dir).resolve()
-    if not path.is_dir():
-        logger.error("Directory not found: %s", path)
-        sys.exit(1)
-
-    report: dict = {}
-    analyze_ue4_dump(path, report)
-
-    out = Path(output) if output else path / "ue4_report.json"
-    out.write_text(json.dumps(report, indent=2, ensure_ascii=False))
-    logger.info("Report saved: %s", out)

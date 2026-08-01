@@ -1,4 +1,4 @@
-"""unity_extract — extract assets from dumped Unity AssetBundle files.
+"""unity — extract assets from dumped Unity AssetBundle files.
 
 Uses UnityPy (pip install UnityPy) to unpack:
   - Texture2D  → PNG
@@ -38,8 +38,6 @@ def extract_bundles(dump_dir: str, output_dir: str | None = None) -> dict:
         logger.error("UnityPy not installed — run: uv pip install UnityPy")
         return {"error": "UnityPy not installed", "extracted": 0}
 
-    import UnityPy  # type: ignore[import]
-
     path = Path(dump_dir).resolve()
     out = Path(output_dir).resolve() if output_dir else path / "unity_extracted"
     bundles = list(path.glob("*.unity3d")) + list(path.glob("asset_*.unity3d"))
@@ -47,6 +45,8 @@ def extract_bundles(dump_dir: str, output_dir: str | None = None) -> dict:
     if not bundles:
         logger.warning("No .unity3d bundles found.")
         return {"bundles": 0, "extracted": 0}
+
+    import UnityPy  # type: ignore[import]  # ~0.5s to import — only pay for it if there is work
 
     out.mkdir(parents=True, exist_ok=True)
     summary: dict = {"bundles": len(bundles), "extracted": 0, "by_type": {}, "errors": []}
