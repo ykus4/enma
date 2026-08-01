@@ -5,7 +5,7 @@ description = "Android runtime analysis and research toolkit — powered by Frid
 requires-python = ">=3.12"
 dependencies = [
     "frida>=17.16.4",
-    "frida-tools>=12.0.0",
+    "frida-tools>=14.10.4",
 ]
 
 [project.optional-dependencies]

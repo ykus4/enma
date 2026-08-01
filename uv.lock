@@ -245,7 +245,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "frida", specifier = ">=17.16.4" },
-    { name = "frida-tools", specifier = ">=12.0.0" },
+    { name = "frida-tools", specifier = ">=14.10.4" },
     { name = "unitypy", marker = "extra == 'unity'", specifier = ">=1.10.0" },
 ]
 provides-extras = ["unity"]
@@ -355,7 +355,7 @@ wheels = [
 
 [[package]]
 name = "frida-tools"
-version = "14.8.1"
+version = "14.10.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama" },
@@ -364,7 +364,7 @@ dependencies = [
     { name = "pygments" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/73/81/d3ffd045dc30486383d678d980845fb173d2eda8c8e220e80b3207a99266/frida_tools-14.8.1.tar.gz", hash = "sha256:f23654f62b1e69581cbfcbc4284626269bd2187d28b9b5037935175485a0a821", size = 4687212, upload-time = "2026-04-03T23:18:09.01Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/80/5e/4592b8005bb5126642c80dfa7ea7a1ab81fd8c232fa03e20374216c04831/frida_tools-14.10.4.tar.gz", hash = "sha256:7a2c544b545d095040fffbd3768a287a426343dad89095b4a24f4b20382d926a", size = 4690392, upload-time = "2026-06-25T00:16:09.892Z" }
 
 [[package]]
 name = "fsspec"
