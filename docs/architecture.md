@@ -15,13 +15,17 @@ enma is a two-process system: a **Python host** running on the analyst's machine
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  enma CLI  (Python)                                         │   │
 │  │                                                             │   │
-│  │  cli.py ──► device.py   (frida-server deploy)              │   │
-│  │         ──► repack.py   (APK gadget injection)             │   │
-│  │         ──► mem.py      (memscan / mempatch REPL)          │   │
-│  │         ──► analyze.py  (post-dump analysis)               │   │
-│  │         ──► report.py   (HTML report generation)           │   │
-│  │         ──► unity.py    (AssetBundle extraction)           │   │
-│  │         ──► ue4.py      (UE4 runtime analysis)             │   │
+│  │  cli.py ──► dump.py         (agent orchestration)          │   │
+│  │         ──► frida_server.py (frida-server deploy)          │   │
+│  │         ──► repack.py       (APK gadget injection)         │   │
+│  │         ──► mem.py          (memscan / mempatch REPL)      │   │
+│  │         ──► analyze.py      (post-dump analysis)           │   │
+│  │         ──► report.py       (HTML report generation)       │   │
+│  │         ──► unity.py        (AssetBundle extraction)       │   │
+│  │         ──► ue4.py          (UE4 runtime analysis)         │   │
+│  │                    │                                        │   │
+│  │                    └──► core/  (agents, session, abi,      │   │
+│  │                                 download)                   │   │
 │  └────────────────────────┬────────────────────────────────────┘   │
 │                           │ Frida RPC / message bus                │
 │                           │ (USB / TCP)                            │
@@ -55,7 +59,9 @@ enma is a two-process system: a **Python host** running on the analyst's machine
 
 ## Agent Categories
 
-The 23 agents are grouped into 6 functional categories, each in its own subdirectory.
+The 25 agents are grouped into 7 functional categories, each in its own subdirectory.
+The 23 non-`mem` agents make up the default set for a bare `enma dump`; the two `mem`
+agents are RPC-driven and are reached through `memscan` / `mempatch` instead.
 
 ```
 agents/
@@ -199,35 +205,57 @@ enma mempatch com.example.game 0x7ff1a2b4 -t int32 -v 99999
 
 ## Component Interaction Map
 
+Dependencies flow one way — `cli.py` ──► feature modules ──► `core/`. Nothing
+imports `cli.py`, and `core/` imports no feature module.
+
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  cli.py                                                          │
+│  cli.py            (argument parser + dispatch only)             │
 │                                                                  │
-│  AGENT_NAMES ──► _AGENT_DIR ──► load_agent()                    │
-│                                      │                           │
-│  _build_parser()                     │ importlib.resources       │
-│  _DISPATCH                           ▼                           │
-│    "dump"     ──► run_dump()    agents/{dir}/{name}_agent.js    │
+│  _build_parser()   eager:  core.agents, core.abi  (frida-free)  │
+│  _DISPATCH         lazy :  one feature module per handler        │
+│    "dump"     ──► run_dump()    ◄── dump.py                     │
+│    "list"     ──► list_apps()   ◄── dump.py                     │
 │    "memscan"  ──► run_memscan() ◄── mem.py                      │
 │    "mempatch" ──► run_mempatch()◄── mem.py                      │
 │    "analyze"  ──► run_analyze() ◄── analyze.py                  │
 │    "report"   ──► run_report()  ◄── report.py                   │
 │    "unity"    ──► run_unity()   ◄── unity.py                    │
-│    "setup"    ──► run_setup()   ◄── device.py                   │
+│    "setup"    ──► run_setup()   ◄── frida_server.py             │
 │    "repack"   ──► run_repack()  ◄── repack.py                   │
 │    "ue4"      ──► run_ue4()     ◄── ue4.py                      │
-│    "list"     ──► list_apps()                                    │
 └──────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐
-│  _util.py  (shared utilities)                                    │
+│  core/agents.py   (single source of truth — 25 agents)          │
 │                                                                  │
-│  cache_dir()              ~/.cache/enma/                  │
-│  download_github_asset()  Frida GitHub releases API             │
-│       ▲                        ▲                                 │
-│       │                        │                                 │
-│  device.py               repack.py                              │
-│  (frida-server .xz)      (frida-gadget .so.xz)                 │
+│  _AGENTS = (Agent(name, category, tags), …)                     │
+│      │        tags: TAG_DUMP / TAG_UE4 / TAG_MEM                │
+│      ├─► DUMP_AGENTS (23)  → `dump` default set, -t choices     │
+│      ├─► UE4_AGENTS  (3)   → `ue4` -t choices                   │
+│      ├─► MEM_AGENTS  (2)   → memscan / mempatch                 │
+│      ├─► load_agent(name)  → agents/{category}/{name}_agent.js  │
+│      └─► discover()        → the tree, for the drift test       │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│  core/session.py  (frida device + session lifecycle)             │
+│                                                                  │
+│  connect(args)            get_device + attach / spawn / watch    │
+│  load_scripts()           inject agents, wire make_on_message    │
+│  run_until_detached()     block; returns True if interrupted     │
+│       ▲              ▲              ▲                            │
+│  dump.py          ue4.py         mem.py                          │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│  core/download.py                    core/abi.py                 │
+│                                                                  │
+│  cache_dir()        ~/.cache/enma/   abi_to_arch()  arm64-v8a →  │
+│  download_github_asset()             arch_to_abi()      arm64    │
+│       ▲              ▲                    ▲          ▲           │
+│  frida_server.py   repack.py       frida_server.py  repack.py    │
+│  (server .xz)      (gadget .so.xz)                   cli.py      │
 └──────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐

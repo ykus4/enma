@@ -8,18 +8,12 @@ import subprocess
 import sys
 import time
 
-from enma._util import FRIDA_VERSION, cache_dir, download_github_asset
+from enma.core.abi import DEFAULT_ARCH, abi_to_arch
+from enma.core.download import FRIDA_VERSION, cache_dir, download_github_asset
 
 logger = logging.getLogger(__name__)
 
 FRIDA_SERVER_DEVICE_PATH = "/data/local/tmp/frida-server"
-
-_ABI_MAP = {
-    "arm64-v8a": "arm64",
-    "armeabi-v7a": "arm",
-    "x86_64": "x86_64",
-    "x86": "x86",
-}
 
 
 def _adb(*args: str, serial: str | None = None, check: bool = True) -> subprocess.CompletedProcess:
@@ -32,7 +26,7 @@ def _adb(*args: str, serial: str | None = None, check: bool = True) -> subproces
 
 def _device_arch(serial: str | None) -> str:
     result = _adb("shell", "getprop", "ro.product.cpu.abi", serial=serial)
-    return _ABI_MAP.get(result.stdout.strip(), "arm64")
+    return abi_to_arch(result.stdout) or DEFAULT_ARCH
 
 
 def _server_running(serial: str | None) -> bool:

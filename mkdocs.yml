@@ -49,4 +49,10 @@ plugins:
 
 nav:
   - Home: index.md
-  - Architecture: architecture.md
+  - Usage:
+      - Subcommands: subcommands.md
+      - Agent Reference: agents.md
+      - Output Files: output-files.md
+  - Reference:
+      - Architecture: architecture.md
+      - Development: development.md

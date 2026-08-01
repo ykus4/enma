@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +271,7 @@ def _analyze_http(dump_dir: Path, report: dict) -> None:
     data = _load_json(dump_dir / "http_traffic.json")
     if data is None:
         return
-    hosts = sorted({e.get("url", "").split("/")[2] for e in data if e.get("url")})
+    hosts = sorted({urlparse(e["url"]).netloc or "?" for e in data if e.get("url")})
     report["http"] = {"requests": len(data), "unique_hosts": hosts}
     logger.info("HTTP: %d request(s) to %d host(s)", len(data), len(hosts))
 

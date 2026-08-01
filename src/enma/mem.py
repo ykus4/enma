@@ -7,7 +7,6 @@ mempatch : single-shot write / NOP / byte patch
 from __future__ import annotations
 
 import contextlib
-import importlib.resources
 import logging
 import sys
 import time
@@ -15,7 +14,8 @@ from typing import Any
 
 import frida
 
-from enma.cli import attach_or_spawn, get_device, wait_for_process
+from enma.core.agents import load_agent
+from enma.core.session import connect
 
 logger = logging.getLogger(__name__)
 
@@ -35,16 +35,19 @@ _SCAN_TYPES = (
 _FILTER_TYPES = ("eq", "ne", "gt", "lt", "gte", "lte", "changed", "unchanged")
 
 
-def _load_agent(name: str) -> str:
-    ref = importlib.resources.files("enma.agents").joinpath("mem").joinpath(f"{name}_agent.js")
-    return ref.read_text(encoding="utf-8")
+def _start_agent(args: Any, name: str) -> tuple[frida.core.Session, Any]:
+    """Attach to the target, inject *name*, and return (session, rpc exports)."""
+    logger.info("Attaching …")
+    _device, session = connect(args)
+    script = session.create_script(load_agent(name))
 
+    def on_message(msg: dict, _data: bytes | None) -> None:
+        if msg["type"] == "error":
+            logger.error("JS error: %s", msg["description"])
 
-def _make_session(args: Any) -> frida.core.Session:
-    device = get_device(args.serial)
-    if getattr(args, "watch", False):
-        return wait_for_process(device, args.target)
-    return attach_or_spawn(device, args.target, getattr(args, "spawn", False))
+    script.on("message", on_message)
+    script.load()
+    return session, script.exports_sync
 
 
 # ── memscan REPL ──────────────────────────────────────────────────────────────
@@ -63,17 +66,7 @@ Commands:
 
 
 def run_memscan(args: Any) -> None:
-    logger.info("Attaching …")
-    session = _make_session(args)
-    script = session.create_script(_load_agent("memscan"))
-
-    def on_message(msg: dict, _data: bytes | None) -> None:
-        if msg["type"] == "error":
-            logger.error("JS error: %s", msg["description"])
-
-    script.on("message", on_message)
-    script.load()
-    rpc = script.exports_sync
+    session, rpc = _start_agent(args, "memscan")
     logger.info("Ready.  Type 'help' for commands.")
 
     try:
@@ -164,18 +157,7 @@ def run_memscan(args: Any) -> None:
 
 
 def run_mempatch(args: Any) -> None:
-    logger.info("Attaching …")
-    session = _make_session(args)
-    script = session.create_script(_load_agent("mempatch"))
-
-    def on_message(msg: dict, _data: bytes | None) -> None:
-        if msg["type"] == "error":
-            logger.error("JS error: %s", msg["description"])
-
-    script.on("message", on_message)
-    script.load()
-    rpc = script.exports_sync
-
+    session, rpc = _start_agent(args, "mempatch")
     addr = args.addr
 
     if args.nop:
