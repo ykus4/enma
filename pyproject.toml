@@ -23,7 +23,7 @@ packages = ["src/enma"]
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.6.1",
+    "pre-commit>=4.6.2",
     "pytest>=8.0.0",
     "ruff>=0.16.7",
     "UnityPy>=1.10.0",
