@@ -4,7 +4,7 @@ version = "0.2.0"
 description = "Android runtime analysis and research toolkit — powered by Frida"
 requires-python = ">=3.12"
 dependencies = [
-    "frida>=17.18.0",
+    "frida>=17.22.2",
     "frida-tools>=14.10.4",
 ]
 
